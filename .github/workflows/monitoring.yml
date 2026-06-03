@@ -1,0 +1,45 @@
+name: Monitoring Validation
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  monitoring-validation:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify Monitoring Structure
+        run: |
+          test -f monitoring/prometheus.yml
+
+          echo "Prometheus configuration found"
+
+          if [ -f monitoring/grafana/grafana-dashboard.json ]; then
+            echo "Grafana dashboard found"
+          else
+            echo "Grafana dashboard missing"
+            exit 1
+          fi
+
+      - name: Validate Prometheus Configuration
+        run: |
+          echo "Validating prometheus.yml"
+
+          grep "scrape_configs" monitoring/prometheus.yml
+
+      - name: Validate Grafana Dashboard JSON
+        run: |
+          python -m json.tool monitoring/grafana/grafana-dashboard.json > /dev/null
+
+      - name: Monitoring Summary
+        run: |
+          echo "## Monitoring Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Prometheus configuration validated" >> $GITHUB_STEP_SUMMARY
+          echo "Grafana dashboard JSON validated" >> $GITHUB_STEP_SUMMARY

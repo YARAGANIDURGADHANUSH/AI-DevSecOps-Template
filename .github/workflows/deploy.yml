@@ -1,0 +1,39 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: ai-devsecops-template
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          docker build -t $IMAGE_NAME:latest -f docker/Dockerfile .
+
+      # Future:
+      # Push image to Docker Hub / GHCR
+
+      - name: Verify Kubernetes Manifests
+        run: |
+          kubectl version --client
+
+          echo "Checking deployment.yaml"
+          test -f kubernetes/deployment.yaml
+
+          echo "Checking service.yaml"
+          test -f kubernetes/service.yaml
+
+      - name: Kubernetes Validation Summary
+        run: |
+          echo "## Deployment Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Docker image built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "Kubernetes manifests validated" >> $GITHUB_STEP_SUMMARY

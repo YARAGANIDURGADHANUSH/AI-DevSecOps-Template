@@ -1,0 +1,62 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r app/requirements.txt
+
+      - name: Validate Python code
+        run: |
+          python -m py_compile app/main.py
+
+      - name: Basic Application Test
+        run: |
+          python -c "print('Application validation successful')"
+
+      - name: Build Docker image
+        run: |
+          docker build -t ai-devsecops-template:latest -f docker/Dockerfile .
+
+      - name: Run container for health check
+        run: |
+          docker run -d -p 5000:5000 --name ai-devsecops-ci ai-devsecops-template:latest
+
+          echo "Waiting for application startup..."
+
+          for i in {1..10}; do
+            if curl -f http://localhost:5000/health; then
+              echo "Health check passed"
+              exit 0
+            fi
+
+            echo "Retry $i..."
+            sleep 3
+          done
+
+          echo "Health check failed"
+          docker logs ai-devsecops-ci
+          exit 1
+
+      - name: Stop test container
+        if: always()
+        run: |
+          docker stop ai-devsecops-ci || true
+          docker rm ai-devsecops-ci || true

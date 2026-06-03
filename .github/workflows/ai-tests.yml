@@ -1,0 +1,45 @@
+name: AI Security Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  ai-security-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r app/requirements.txt
+          pip install pandas scikit-learn
+
+      - name: Verify AI Security Files
+        run: |
+          ls -la ai_security/
+
+      - name: Run AI Model Evaluation
+        run: |
+          python ai_security/evaluate_model.py
+
+      - name: Run AI Anomaly Detection
+        run: |
+          python ai_security/anomaly_detection.py
+
+      - name: AI Test Summary
+        if: success()
+        run: |
+          echo "## AI Security Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Model evaluation completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "Anomaly detection completed successfully" >> $GITHUB_STEP_SUMMARY

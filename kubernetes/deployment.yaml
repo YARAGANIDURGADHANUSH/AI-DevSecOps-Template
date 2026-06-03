@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: ai-devsecops-template
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: ai-devsecops-template
+
+  template:
+    metadata:
+      labels:
+        app: ai-devsecops-template
+
+    spec:
+      containers:
+      - name: ai-devsecops-container
+        image: ai-devsecops-template:latest
+
+        ports:
+        - containerPort: 5000

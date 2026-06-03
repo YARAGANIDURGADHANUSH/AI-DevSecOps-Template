@@ -1,0 +1,58 @@
+name: Security Scans
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t ai-devsecops-template:latest -f docker/Dockerfile .
+
+      # Filesystem Scan
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+
+      # Container Image Scan
+      - name: Run Trivy image scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ai-devsecops-template:latest
+          severity: HIGH,CRITICAL
+
+      - name: Generate Trivy Report
+        run: |
+          mkdir -p reports
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v ${{ github.workspace }}:/workspace \
+            aquasec/trivy image \
+            --severity HIGH,CRITICAL \
+            ai-devsecops-template:latest \
+            > reports/trivy-report.txt || true
+
+      - name: Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-security-report
+          path: reports/trivy-report.txt
+
+      - name: Trivy Summary
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "HIGH vulnerabilities: $(grep -c HIGH reports/trivy-report.txt || true)" >> $GITHUB_STEP_SUMMARY
+          echo "CRITICAL vulnerabilities: $(grep -c CRITICAL reports/trivy-report.txt || true)" >> $GITHUB_STEP_SUMMARY
