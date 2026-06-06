@@ -1,0 +1,38 @@
+groups:
+
+- name: ai-devsecops-alerts
+
+  rules:
+
+  - alert: HighPromptInjectionAttempts
+    expr: prompt_injection_total > 3
+    for: 10s
+
+    labels:
+      severity: critical
+
+    annotations:
+      summary: "High Prompt Injection Activity"
+      description: "Prompt injection attempts exceeded threshold."
+
+  - alert: HighPIIDetections
+    expr: pii_total > 3
+    for: 10s
+
+    labels:
+      severity: warning
+
+    annotations:
+      summary: "PII Leakage Risk"
+      description: "Multiple PII detections observed."
+
+  - alert: ApplicationDown
+    expr: up{job="ai-devsecops-template"} == 0
+    for: 15s
+
+    labels:
+      severity: critical
+
+    annotations:
+      summary: "Application Down"
+      description: "FastAPI service is unreachable."
